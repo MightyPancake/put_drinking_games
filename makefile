@@ -9,7 +9,7 @@ default: main
 all: main tags
 
 main: $(SOURCES) $(HEADERS) makefile
-	mpicc $(SOURCES) $(FLAGS) -o $(NAME) -Wall
+	mpicc $(SOURCES) $(FLAGS) -o $(NAME)
 
 clear: clean
 
