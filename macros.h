@@ -5,38 +5,30 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#define max(A, B) ((A) > (B) ? (A) : (B))
-
 #define extern_globals \
-    extern int* groups; \
-    extern int rank; \
-    extern int size; \
-    extern MPI_Datatype packet_type; \
-    extern MPI_Status status; \
-    extern bool group_picked; \
-    extern pthread_mutex_t groups_mutex; \
-    extern bool zzz_time; \
-    extern int clk; \
-    extern int awaiting_count; \
-    extern int* awaiting_reqs; \
-    extern bool awaiting_ack; \
-    extern int ack_count; \
-    extern int A; \
-    extern pthread_mutex_t A_mutex; \
-    extern int a_amp; \
-    extern bool i_start; \
-    extern bool got_all_acks; \
+  extern int rank; \
+  extern int size; \
+  extern MPI_Datatype packet_type; \
+  extern MPI_Status status; \
+  extern packet_t packet; \
+  extern pthread_mutex_t groups_mutex; \
+  extern pthread_mutex_t A_mutex; \
+  extern pthread_mutex_t state_mutex; \
+  extern int* groups; \
+  extern int state; \
+  extern int A; \
+  extern int ack_count; \
+  extern int clk; \
+  extern int* request_queue; \
+  extern int queue_count; \
 
+
+#define my_group (groups[rank])
 
 #define DEBUG (1)
-#define ULTRA_DBG (0)
-#define DISPLAY_GROUPS (0)
 #define rand_prec 1000
 #define randomly(P) (((float)((rand()%rand_prec))/rand_prec)<=(P))
 
-#define print_stats printf("#%d: (im_starting: %d, group: %d, ack_waiting: %d)\n", rank, im_starting, my_group, ack_waiting)
-
-#define my_group groups[rank]
 
 #define RANK_COLOR(R) ({ \
     int RANK = R + 5; \
@@ -68,5 +60,20 @@
   pthread_mutex_unlock(&groups_mutex); \
   printf("---------\n"); \
 }
+
+//States
+#define PICK_STATE 0
+#define AWAIT_ACK_STATE 1
+#define MONITOR_STATE 2
+#define WAIT_STATE 3
+#define REST_STATE 4
+#define START_STATE 5
+
+#define set_state(S) ({ \
+  pthread_mutex_lock(&state_mutex); \
+  state = S; \
+  pthread_mutex_unlock(&state_mutex); \
+  state; \
+})
 
 #endif

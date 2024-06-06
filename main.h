@@ -10,8 +10,15 @@
 #include "comms.h"
 
 void check_thread_support(int provided);
+void main_loop();
 void finalize();
+void monitor();
+void start();
 void init_globals();
+void pick_group();
+void nap();
+
+void handle_queued_requests();
 
 #endif
 

@@ -19,17 +19,22 @@ void free_packet_type(MPI_Datatype* p_type){
 }
 
 void send_packet(packet_t p, int dest, int tag){
-    // if DEBUG
-        // printf("Sending %s to %d...\n", tag_to_str(tag), dest);
-    MPI_Send(&p, 1, packet_type, dest, tag, MPI_COMM_WORLD);
+    // MPI_Send(&p, 1, packet_type, dest, tag, MPI_COMM_WORLD);
+    send_packet_dontwait(p, dest, tag);
+}
+
+void send_packet_dontwait(packet_t p, int dest, int tag){
+    MPI_Request request;
+    MPI_Isend(&p, 1, packet_type, dest, tag, MPI_COMM_WORLD, &request);
+    MPI_Request_free(&request);
 }
 
 void broadcast_packet(packet_t p, int tag){
-    // if DEBUG
-    //     printf("#%d: Broadcasting %s(group: %d, %d)\n", rank, tag_to_str(tag), p.group, p.starting);
     for (int i=0; i<size; i++){
         if (i==rank) continue;
-        MPI_Send(&p, 1, packet_type, i, tag, MPI_COMM_WORLD);
+        MPI_Request request;
+        MPI_Isend(&p, 1, packet_type, i, tag, MPI_COMM_WORLD, &request);
+        MPI_Request_free(&request);
     }
 }
 
@@ -46,27 +51,31 @@ const char* tag_to_str(int tag){
 void join_group(int grp_no){
     pthread_mutex_lock(&groups_mutex);
     my_group = grp_no;
-    // group_picked = true;
+    if (grp_no == 0){
+        state = PICK_STATE;
+    }else if (rank == size-1){
+        state = MONITOR_STATE;
+    }else{
+        state = WAIT_STATE;
+    }
     broadcast_packet((packet_t){
-    .num1=grp_no,
-    .num2=0
+        .num1=grp_no,
+        .num2=0
     }, JOIN_TAG);
+    dbg_print("Joining %d", grp_no);
     pthread_mutex_unlock(&groups_mutex);
 }
 
 void start_group(int grp){
-    i_start = true;
     pthread_mutex_lock(&groups_mutex);
-    my_group = grp;
-    // group_picked = true;
-    a_amp = -1;
+    state = AWAIT_ACK_STATE;
+    ack_count = 0;
     broadcast_packet((packet_t){
         .num1=my_group,
         .num2=++clk
     }, CRIT_SEC_TAG);
+    dbg_print("Starting %d", grp);
     pthread_mutex_unlock(&groups_mutex);
-    awaiting_ack = true;
-    ack_count = 0;
 }
 
 
