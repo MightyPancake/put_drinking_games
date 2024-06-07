@@ -43,7 +43,6 @@ const char* tag_to_str(int tag){
         case JOIN_TAG: return "JOIN"; break;
         case CRIT_SEC_TAG: return "CRIT_SEC"; break;
         case ACK_TAG: return "ACK"; break;
-        case UPDATE_A_TAG: return "UPDATE_A"; break;
         default: return "unknown"; break;
     }
 }

@@ -13,7 +13,7 @@ typedef struct packet_t {
 //Join a group. No ack back
 #define JOIN_TAG 1
 //num1 - group
-//num2 - should give back A? (1|0)
+//num2 - free group (0 if none)
 
 //I want to update A. Ack required
 #define CRIT_SEC_TAG 2
@@ -23,11 +23,6 @@ typedef struct packet_t {
 //You can go into critical section
 #define ACK_TAG 3
 //num1 - decision (0|1)
-
-//I changed A, update your local copy
-#define UPDATE_A_TAG 4
-//num1 - amplitude (DEPRECATED!)
-//num2 - group to start (0 if none)
 
 void init_packet_type();
 void free_packet_type();

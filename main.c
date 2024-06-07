@@ -4,13 +4,15 @@
 
 int rank, size;
 
+int lamport_clk = 0;
+pthread_mutex_t lamport_mutex;
+
 MPI_Datatype packet_type;
 MPI_Status status;
 packet_t packet;
 
 //Mutexes
 pthread_mutex_t groups_mutex;
-pthread_mutex_t A_mutex;
 pthread_mutex_t state_mutex;
 
 int* groups = NULL;
@@ -39,8 +41,8 @@ int main(int argc, char** argv){
   init_globals();
   //Init mutexes
   pthread_mutex_init(&groups_mutex, NULL);
-  pthread_mutex_init(&A_mutex, NULL);
   pthread_mutex_init(&state_mutex, NULL);
+  pthread_mutex_init(&lamport_mutex, NULL);
   //Start comms and grouping
   pthread_create(&comms_thread, NULL, comms_main, 0);
   main_loop();
@@ -87,29 +89,17 @@ void nap(){
 
 void start(){
     pthread_mutex_lock(&groups_mutex);
-    pthread_mutex_lock(&A_mutex);
-    if (A<=0) {
-        pthread_mutex_unlock(&A_mutex);
-        pthread_mutex_unlock(&groups_mutex);
-        return;
-    }
-    A--;
     dbg_print("Starting my group (%d)", my_group);
-    broadcast_packet((packet_t){
-        .num2 = my_group
-    }, UPDATE_A_TAG);
-    handle_queued_requests();
     int nap_time = 1 + rand()%4;
     dbg_print("Napping for %ds...", nap_time);
-    sleep(nap_time);
-    A++;
     broadcast_packet((packet_t){
         .num1=0,
-        .num2=1
+        .num2=my_group
     }, JOIN_TAG);
+    sleep(nap_time);
+    handle_queued_requests();
     dbg_print("Joining 0");
     state = PICK_STATE;
-    pthread_mutex_unlock(&A_mutex);
     pthread_mutex_unlock(&groups_mutex);
 }
 
@@ -209,6 +199,8 @@ void check_thread_support(int provided){
 void finalize(){
     //Destroy mutexes
     pthread_mutex_destroy(&groups_mutex);
+    pthread_mutex_destroy(&lamport_mutex);
+    pthread_mutex_destroy(&state_mutex);
     free(groups);
     free(request_queue);
 

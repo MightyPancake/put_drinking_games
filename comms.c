@@ -36,13 +36,14 @@ void* comms_main(void* data){
     dbg_print("Got %s(%d, %d) from %d", tag_to_str(status.MPI_TAG), rcvd.num1, rcvd.num2, sender);
     switch (status.MPI_TAG){
       case JOIN_TAG:
+        pthread_mutex_lock(&state_mutex);
         pthread_mutex_lock(&groups_mutex);
-        pthread_mutex_lock(&A_mutex);
         groups[sender] = rcvd.num1;
-        if (rcvd.num2)
-          A++;
-        pthread_mutex_unlock(&A_mutex);
+        if (my_group != 0 && rcvd.num2 == my_group){
+          state = REST_STATE;
+        }
         pthread_mutex_unlock(&groups_mutex);
+        pthread_mutex_unlock(&state_mutex);
         break;
       case CRIT_SEC_TAG:
         pthread_mutex_lock(&state_mutex);
@@ -54,7 +55,7 @@ void* comms_main(void* data){
           pthread_mutex_unlock(&state_mutex);
           break;
         }
-        bool prio_mine = (clk<rcvd.num2 || (clk==rcvd.num2 && rank>sender));
+        bool prio_mine = (clk<rcvd.num2 || (clk==rcvd.num2 && rank<sender));
         if (my_group==rcvd.num1){
           if (prio_mine){
             send_ack(sender, 0);
@@ -77,26 +78,13 @@ void* comms_main(void* data){
         pthread_mutex_lock(&state_mutex);
         if (rcvd.num1){
           ack_count++;
-          if (ack_count == size-1){
+          if (ack_count == size-1-A){
             state = START_STATE;
           }
         }else{
           handle_queued_requests();
           state = WAIT_STATE;
         }
-        pthread_mutex_unlock(&state_mutex);
-        break;
-      case UPDATE_A_TAG:
-        pthread_mutex_lock(&state_mutex);
-        pthread_mutex_lock(&groups_mutex);
-        pthread_mutex_lock(&A_mutex);
-        dbg_print("%d took one A", sender);
-        A--;
-        if (rcvd.num2 == my_group){
-          state = REST_STATE;
-        }
-        pthread_mutex_unlock(&A_mutex);
-        pthread_mutex_unlock(&groups_mutex);
         pthread_mutex_unlock(&state_mutex);
         break;
       default:

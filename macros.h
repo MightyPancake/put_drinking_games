@@ -8,11 +8,12 @@
 #define extern_globals \
   extern int rank; \
   extern int size; \
+  extern int lamport_clk; \
+  extern pthread_mutex_t lamport_mutex; \
   extern MPI_Datatype packet_type; \
   extern MPI_Status status; \
   extern packet_t packet; \
   extern pthread_mutex_t groups_mutex; \
-  extern pthread_mutex_t A_mutex; \
   extern pthread_mutex_t state_mutex; \
   extern int* groups; \
   extern int state; \
@@ -48,7 +49,7 @@
 #define dbg_print(format, ...) do { \
     if (!DEBUG) break; \
     const char* color = RANK_COLOR(rank); \
-    printf("%s#%d:(A=%d)[%d] " format "\033[0m\n", color, rank, A, clk, ##__VA_ARGS__); \
+    printf("%s#%d:[%d] " format "\033[0m\n", color, rank, clk, ##__VA_ARGS__); \
 } while (0)
 
 #define display_groups() { \
