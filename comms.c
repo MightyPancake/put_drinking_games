@@ -33,6 +33,7 @@ void* comms_main(void* data){
   while(1){
     MPI_Recv(&rcvd, 1, packet_type, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
     int sender = status.MPI_SOURCE;
+    set_lamport(rcvd.clk);
     dbg_print("Got %s(%d, %d) from %d", tag_to_str(status.MPI_TAG), rcvd.num1, rcvd.num2, sender);
     switch (status.MPI_TAG){
       case JOIN_TAG:

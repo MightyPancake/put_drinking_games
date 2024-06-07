@@ -5,10 +5,11 @@
 typedef struct packet_t {
     int        num1;
     int        num2;
+    int        clk;
 } packet_t;
 
 //Number of fields in the packet type
-#define NITEMS 2
+#define NITEMS 3
 
 //Join a group. No ack back
 #define JOIN_TAG 1

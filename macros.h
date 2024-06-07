@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#define max(A, B) ((A)>(B) ? (A) : (B))
+
 #define extern_globals \
   extern int rank; \
   extern int size; \
@@ -49,7 +51,7 @@
 #define dbg_print(format, ...) do { \
     if (!DEBUG) break; \
     const char* color = RANK_COLOR(rank); \
-    printf("%s#%d:[%d] " format "\033[0m\n", color, rank, clk, ##__VA_ARGS__); \
+    printf("%s#%d:[%d] " format "\033[0m\n", color, rank, lamport_clk, ##__VA_ARGS__); \
 } while (0)
 
 #define display_groups() { \
@@ -61,6 +63,12 @@
   pthread_mutex_unlock(&groups_mutex); \
   printf("---------\n"); \
 }
+
+#define set_lamport(A) ({ \
+  pthread_mutex_lock(&lamport_mutex); \
+  lamport_clk = max(lamport_clk, A); \
+  pthread_mutex_unlock(&lamport_mutex); \
+})
 
 //States
 #define PICK_STATE 0

@@ -3,12 +3,12 @@
 extern_globals
 
 void init_packet_type(MPI_Datatype* p_type){
-    int       blocklengths[NITEMS] = {1,1};
-    MPI_Datatype typy[NITEMS] = {MPI_INT, MPI_INT};
+    int       blocklengths[NITEMS] = {1,1,1};
+    MPI_Datatype typy[NITEMS] = {MPI_INT, MPI_INT, MPI_INT};
     MPI_Aint offsets[NITEMS]; 
     offsets[0] = offsetof(packet_t, num1);
     offsets[1] = offsetof(packet_t, num2);
-    // offsets[2] = offsetof(packet_t, data);
+    offsets[2] = offsetof(packet_t, clk);
 
     MPI_Type_create_struct(NITEMS, blocklengths, offsets, typy, p_type);
     MPI_Type_commit(p_type);
@@ -25,17 +25,23 @@ void send_packet(packet_t p, int dest, int tag){
 
 void send_packet_dontwait(packet_t p, int dest, int tag){
     MPI_Request request;
+    pthread_mutex_lock(&lamport_mutex);
+    p.clk = ++lamport_clk;   
     MPI_Isend(&p, 1, packet_type, dest, tag, MPI_COMM_WORLD, &request);
     MPI_Request_free(&request);
+    pthread_mutex_unlock(&lamport_mutex);
 }
 
 void broadcast_packet(packet_t p, int tag){
+    pthread_mutex_lock(&lamport_mutex);
+    p.clk = ++lamport_clk;   
     for (int i=0; i<size; i++){
         if (i==rank) continue;
         MPI_Request request;
         MPI_Isend(&p, 1, packet_type, i, tag, MPI_COMM_WORLD, &request);
         MPI_Request_free(&request);
     }
+  pthread_mutex_unlock(&lamport_mutex);
 }
 
 const char* tag_to_str(int tag){
